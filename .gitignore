@@ -1,0 +1,5 @@
+/.fdk
+/coverage
+/dist
+/log
+/server/test_data

@@ -1,0 +1,32 @@
+{
+  "platform-version": "2.2",
+  "product": {
+    "freshdesk": {
+      "location": {
+        "ticket_sidebar": {
+          "url": "index.html",
+          "icon": "styles/images/icon.svg"
+        }
+      },
+      "events": {
+        "onTicketCreate": {
+          "handler": "onTicketCreateCallback"
+        },
+        "onConversationCreate": {
+          "handler": "onConversationCreateCallback"
+        }
+      }
+    }
+  },
+  "whitelisted-domains": [
+    "https://*.freshdesk.com",
+    "https://sellercentral.amazon.com",
+    "https://fortin.ca",
+    "https://www.idatalink.com",
+    "https://www.directechs.com"
+  ],
+  "engines": {
+    "node": "12.22.6",
+    "fdk": "7.0.1"
+  }
+}
