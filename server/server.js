@@ -26,7 +26,7 @@ async function checkInDatabase(ticket_id, description) {
 async function checkDescription(description, ticket_id, dbData) {
   console.log("Data from DB : ", dbData);
   let formatted_description = description.replace(/\s/g, '');
-  let tempObj = { 
+  let tempObj = {
     'order' : (dbData.order) ? dbData.order : false, 
     'service_1' : (dbData.service_1) ? dbData.service_1 : false, 
     'service_2' : (dbData.service_2) ? dbData.service_2 : false, 
@@ -37,12 +37,11 @@ async function checkDescription(description, ticket_id, dbData) {
   // const orderRegex_1 = new RegExp(/11384150113731419/, 'g');
   // const service_regex_1 = new RegExp(/001A07275853/, 'g');
   const service_regex_1 = new RegExp(/[0-9A-Fa-f]{12}/, 'g'); // Hexadecimal Numbers
-  const service_regex_2 = new RegExp(/[0-9A-Fa-f]{10}/, 'g'); // Hexadecimal Numbers
   const service_regex_3 = new RegExp(/[0-9A-Za-z]{19}/, 'g'); // Alpha numeric Numbers
 
-  let orderDescription = formatted_description.replace(/-/g, '');
-  console.log({ orderDescription });
-  let orderId = orderRegex.exec(orderDescription);
+  let removeDashDesc = formatted_description.replace(/-/g, '');
+  var patternToTest_order = removeDashDesc.substr(removeDashDesc.indexOf("11"), 17);
+  let orderId = orderRegex.exec(patternToTest_order);
   console.log({ orderId });
   if(orderId !== null) {
     tempObj['order'] = orderId[0];
@@ -70,18 +69,24 @@ async function checkDescription(description, ticket_id, dbData) {
   }
 
   if((!tempObj.service_1) && (!tempObj.service_3)) {
-    let service_2 = service_regex_2.exec(formatted_description);
-    if(service_2 !== null) {
-      console.log(service_2);
-      tempObj['service_2'] = service_2[0];
-      console.log("++++++++++ Service 2 found ++++++++");
-    } else {
-      console.log('----------> ', 'false in service 2');
+    tempObj['service_2'] = await findService3(description, tempObj.order);
+  }
+  console.log(tempObj);
+  // storeInDatabase(ticket_id, tempObj);
+}
+
+async function findService3(description, order) {
+  let match;
+  const service_regex_2 = new RegExp(/[0-9A-Fa-f]{10}/, 'g'); // Hexadecimal Numbers
+  while ((match = service_regex_2.exec(description)) !== null) {
+    if (match.index === service_regex_2.lastIndex) {
+      service_regex_2.lastIndex++;
+    }
+    let found = order.includes(match[0])
+    if(!found) {
+      return match[0];
     }
   }
-
-  console.log(tempObj);
-  storeInDatabase(ticket_id, tempObj);
 }
 
 function storeInDatabase(ticket_id, obj) {
