@@ -11,44 +11,39 @@ exports = {
 
 async function checkInDatabase(ticket_id, description) {
   $db.get(`ticket_${ticket_id}`).then(dbData => {
-    // console.log(dbData, description)
     checkDescription(description, ticket_id, dbData);
   }, err => {
     console.log("Status code from db : ", err);
     if(err.status === 404) {
-      console.log(err)
+      console.log(err);
       checkDescription(description, ticket_id, false);
     }
   });
-  // checkDescription(description, ticket_id, false);
 }
 
 async function checkDescription(description, ticket_id, dbData) {
   console.log("Data from DB : ", dbData);
   let formatted_description = description.replace(/\s/g, '');
   let tempObj = {
-    'order' : (dbData.order) ? dbData.order : false, 
+    'order' : (dbData.order) ? dbData.order : false,
     'service_1' : (dbData.service_1) ? dbData.service_1 : false, 
     'service_2' : (dbData.service_2) ? dbData.service_2 : false, 
     'service_3' : (dbData.service_3) ? dbData.service_3 : false,
   };
   
   const orderRegex = new RegExp(/[0-9]{17}/, 'g');
-  // const orderRegex_1 = new RegExp(/11384150113731419/, 'g');
-  // const service_regex_1 = new RegExp(/001A07275853/, 'g');
   const service_regex_1 = new RegExp(/[0-9A-Fa-f]{12}/, 'g'); // Hexadecimal Numbers
   const service_regex_3 = new RegExp(/[0-9A-Za-z]{19}/, 'g'); // Alpha numeric Numbers
 
-  let removeDashDesc = formatted_description.replace(/-/g, '');
-  var patternToTest_order = removeDashDesc.substr(removeDashDesc.indexOf("11"), 17);
-  let orderId = orderRegex.exec(patternToTest_order);
-  console.log({ orderId });
-  if(orderId !== null) {
-    tempObj['order'] = orderId[0];
+  let isOrderFound = await findOrder(orderRegex, formatted_description);
+  if(isOrderFound) {
+    tempObj['order'] = isOrderFound;
   } else {
     console.log("false in order")
   }
 
+  // console.log('------- >', tempObj);
+  // return false
   var patternToTest_1 = formatted_description.substr(formatted_description.indexOf("001"), 12);
   console.log("Pattern to Test for service 1 : ", patternToTest_1);
   let service_1 = service_regex_1.exec(patternToTest_1);
@@ -72,7 +67,24 @@ async function checkDescription(description, ticket_id, dbData) {
     tempObj['service_2'] = await findService3(description, tempObj.order);
   }
   console.log(tempObj);
-  // storeInDatabase(ticket_id, tempObj);
+  storeInDatabase(ticket_id, tempObj);
+}
+
+async function findOrder(regex, description) {
+  let m;
+  let removeDashDesc = description.replace(/-/g, '');
+  while ((m = regex.exec(removeDashDesc)) !== null) {
+    if (m.index === regex.lastIndex) {
+      regex.lastIndex++;
+    }
+    if(m.length > 0) {
+      let patternToTest_order = m[0].substr(m[0].indexOf("11"), 17);
+      if(patternToTest_order) {
+        return patternToTest_order;
+      }
+    }
+  }
+  return null;
 }
 
 async function findService3(description, order) {
@@ -82,7 +94,8 @@ async function findService3(description, order) {
     if (match.index === service_regex_2.lastIndex) {
       service_regex_2.lastIndex++;
     }
-    let found = order.includes(match[0])
+    console.log('Service 2 ======>', match[0]);
+    let found = order.includes(match[0]);
     if(!found) {
       return match[0];
     }
